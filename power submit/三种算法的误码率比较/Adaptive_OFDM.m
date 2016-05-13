@@ -14,7 +14,7 @@ M=8;       %max number of bit for per subcarrier
 Rt=256;   %bit/OFDMsymbol;
 B=5e6;    %(Hz) 5MHz
 B_subc=B/Num_subc; %78.125kHz
-BER_target=1e-4;
+BER_target=1e-4;%BER_target仅用于Hughes_Hartogs算法
 gap=-log(5*BER_target)/1.5;  %dB
 % Eb=Pt/Rt; %average energy of per bit   1/128(wat)
 % Eb_N0=0:2:20;  %SNR per bit
@@ -26,7 +26,7 @@ num_taps=4;  %多径数
 GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
-Max_counter=10;  %在一个信噪比取值下，进行800次发送和接收，来统计BER
+Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
 %% --------------Multipath_Rayleigh Channel Establish------
 %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
 [path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps);
@@ -106,15 +106,14 @@ for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
         Average_error(i)=Total_error(i)/Max_counter;
     end
     BER_stat
-    Average_error
-    %------------------------------------------------------
-    % save c:\matlab\Adaptive_OFDM_vSimple_Alpha\inf\Inf_simulation.mat gain_subc channel_impulse H_ideal BER_stat;
+    Average_error;
     %--------------------------Plot------------------
-    %模块16：BER曲线绘图
+    %模块16：BER曲线绘图 %存入各自BER   am文件
     semilogy(SNR_av,BER_stat,'o-r');
     data = [SNR_av; BER_stat];
     save ser_16QAM_EP.am data -ascii;
     % plot(SNR_av,BER_stat,'*-r');
     grid on;
 end
+ser_bijiao();%几种绘图
 %-------------------end of file------------------------------

@@ -1,5 +1,4 @@
-clear;
-
+function [ ]=ser_bijiao()
 load  ser_16QAM_EP.am -ascii;
 ser_16QAM_EP_x = ser_16QAM_EP(1,:);
 ser_16QAM_EP_y = ser_16QAM_EP(2,:);
@@ -28,6 +27,8 @@ hold on;
 semilogy(ser_chow_x, ser_chow_y,'ko-');
 hold off;
 
-legend('16QAM(EP) ', 'chow 算法','Fische算法', 'Hughes-Hartogs算法',3)
+legend('16QAM(EP) ', 'chow 算法','Fischer算法', 'Hughes-Hartogs算法',3)
 xlabel('信噪比(dB)', 'FontSize',12);
 ylabel('SER ', 'FontSize',12);
+grid on;
+end
