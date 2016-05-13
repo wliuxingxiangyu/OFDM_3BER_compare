@@ -34,18 +34,18 @@ Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
 gain_subc=abs(H_ideal)
 % load  inf/inf3.mat
 %% --------------------------------------------------------------------
-for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
+for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
     %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：程序运行主界面
-    disp('Please input number to select the program you want to execute.');
-    disp('0.1   EBA_EPA Algorithm');
-    disp('0.2   MaxC_EPA Algorithm');
-    disp('1   Waterfilling Algorithm');
-    disp('2   Chow Algorithm');   %???????
-    disp('3   Hughes-Hartogs Algorithm');
-    disp('4   Fischer Algorithm');
-    disp('5   Algo_xia Algorithm');
-    xia=input('Number=');
+%     disp('Please input number to select the program you want to execute.');
+%     disp('0.1   EBA_EPA Algorithm');
+%     disp('0.2   MaxC_EPA Algorithm');
+%     disp('1   Waterfilling Algorithm');
+%     disp('2   Chow Algorithm');   %???????
+%     disp('3   Hughes-Hartogs Algorithm');
+%     disp('4   Fischer Algorithm');
+%     disp('5   Algo_xia Algorithm');
+%     xia=input('Number=');
     for i=1:L
         disp('Please wait......');
         loop=i
@@ -54,7 +54,7 @@ for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
             %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
             % H_normalized=H_ideal./sum(abs(H_ideal));
             % gain_subc=abs(H_normalized);
-            [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,Noise_var(i),M,BER_target,Pt,xia,B);
+            [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,Noise_var(i),M,BER_target,Pt,algoMode,B);
             % Bit_total=sum(bitnum_sub);                                        %BER_target仅用于Hughes_Hartogs算法
             %========================>>>Data Generation>>>>>===================
             %模块3：发送比特产生
@@ -109,11 +109,16 @@ for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
     Average_error;
     %--------------------------Plot------------------
     %模块16：BER曲线绘图 %存入各自BER   am文件
-    semilogy(SNR_av,BER_stat,'o-r');
-    data = [SNR_av; BER_stat];
-    save ser_16QAM_EP.am data -ascii;
-    % plot(SNR_av,BER_stat,'*-r');
-    grid on;
+    data = [SNR_av; BER_stat];%两个1*16拼接成2*16
+    if algoMode == 1
+        save ser_16QAM.am data -ascii;
+    elseif  algoMode == 2   
+        save ser_chow.am   data -ascii;
+    elseif  algoMode == 3   
+        save ser_Hughes.am       data -ascii;
+    elseif  algoMode == 4   
+        save ser_Fischer.am      data -ascii;
+    end
 end
 ser_bijiao();%几种绘图
 %-------------------end of file------------------------------
