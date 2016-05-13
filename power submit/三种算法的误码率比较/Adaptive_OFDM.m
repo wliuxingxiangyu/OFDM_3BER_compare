@@ -1,10 +1,8 @@
 %Introduce:仿真平台可以分为16个模块，其中模块1～模块15，各用一个函数实现其功能；
 %信道建立未考虑多普勒频移；信道估计为理想估计；采用子载波平均信噪比，子载波平均功率归一化为1。
 %系统发送比特总数固定，为Rt.
-clear all;
-clc;
-%--------------------------------------------
-%--------------------Parameters----------
+clear all; clc; 
+%% --------------------Parameters----------
 Num_subc=64;
 % Rb=10e6;  %(bit/s) 10Mbit/s
 P_av=1;
@@ -28,14 +26,14 @@ num_taps=4;  %多径数
 GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
-Max_counter=800;  %在一个信噪比取值下，进行800次发送和接收，来统计BER
-%--－－---------------Multipath_Rayleigh Channel Establish------
+Max_counter=10;  %在一个信噪比取值下，进行800次发送和接收，来统计BER
+%% --------------Multipath_Rayleigh Channel Establish------
 %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
 [path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps);
 [H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
 gain_subc=abs(H_ideal)
 % load  inf/inf3.mat
-%--------------------------------------------------------------------
+%% --------------------------------------------------------------------
 for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
     %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：程序运行主界面
@@ -48,17 +46,16 @@ for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
     disp('4   Fischer Algorithm');
     disp('5   Algo_xia Algorithm');
     xia=input('Number=');
-    %*************************************Tx****发射系统*************************
     for i=1:L
         disp('Please wait......');
         loop=i
         for loop=1:Max_counter
-            %------Source Allocation<<<<-->>>>-----------------
+          %% ------Source Allocation<<<<-->>>>-----------------
             %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
             % H_normalized=H_ideal./sum(abs(H_ideal));
             % gain_subc=abs(H_normalized);
             [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,Noise_var(i),M,BER_target,Pt,xia,B);
-            % Bit_total=sum(bitnum_sub);
+            % Bit_total=sum(bitnum_sub);                                        %BER_target仅用于Hughes_Hartogs算法
             %========================>>>Data Generation>>>>>===================
             %模块3：发送比特产生
             Bit_sequence=randi(1,Rt);
@@ -121,5 +118,3 @@ for k=1:1  %k：选择算法的次数/程序运行次数/信道建立次数
     grid on;
 end
 %-------------------end of file------------------------------
-
-
