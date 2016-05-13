@@ -36,19 +36,10 @@ gain_subc=abs(H_ideal)
 %% --------------------------------------------------------------------
 for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
     %-----------Select parameter for Resource Allocation Algo----------------
-    %模块0：程序运行主界面
-%     disp('Please input number to select the program you want to execute.');
-%     disp('0.1   EBA_EPA Algorithm');
-%     disp('0.2   MaxC_EPA Algorithm');
-%     disp('1   Waterfilling Algorithm');
-%     disp('2   Chow Algorithm');   %???????
-%     disp('3   Hughes-Hartogs Algorithm');
-%     disp('4   Fischer Algorithm');
-%     disp('5   Algo_xia Algorithm');
-%     xia=input('Number=');
-    for i=1:L
-        disp('Please wait......');
-        loop=i
+    %模块0：选择algorthm Mode
+    for i=1:L %信噪比的取值个数
+      %  disp('Please wait......');
+%         loop=i
         for loop=1:Max_counter
           %% ------Source Allocation<<<<-->>>>-----------------
             %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
@@ -109,6 +100,7 @@ for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
     Average_error;
     %--------------------------Plot------------------
     %模块16：BER曲线绘图 %存入各自BER   am文件
+    data=[];
     data = [SNR_av; BER_stat];%两个1*16拼接成2*16
     if algoMode == 1
         save ser_16QAM.am data -ascii;
