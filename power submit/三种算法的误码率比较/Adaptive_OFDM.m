@@ -10,16 +10,16 @@ SNR_av=0:2:30;%子载波平均信噪比
 Noise_var=P_av./10.^(SNR_av./10); %子载波噪声功率
 Pt=P_av*Num_subc; %energy (wat????)
 Rb=10e6; % in Mbit/s
-M=8;       %max number of bit for per subcarrier
+MaxBitPerCarrier=8;       %max number of bit for per subcarrier
 Rt=256;   %bit/OFDMsymbol;
 B=5e6;    %(Hz) 5MHz
-B_subc=B/Num_subc; %78.125kHz
+B_subc=B/Num_subc; %子载波带宽78.125kHz
 BER_target=1e-4;%BER_target仅用于Hughes_Hartogs算法
 gap=-log(5*BER_target)/1.5;  %dB
 % Eb=Pt/Rt; %average energy of per bit   1/128(wat)
 % Eb_N0=0:2:20;  %SNR per bit
 % Noise_var =Eb./10.^(Eb_N0./10); %PSD of noise in different SNR   % average power of noise in per subcarrier
-L=length(SNR_av); %信噪比的取值个数
+numSNR=length(SNR_av); %信噪比的取值个数
 rms_delay=2;  %rms时延扩展
 max_delay=16; %最大时延扩展
 num_taps=4;  %多径数
@@ -34,10 +34,11 @@ Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
 gain_subc=abs(H_ideal)
 % load  inf/inf3.mat
 %% --------------------------------------------------------------------
-for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
+% for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
+for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数    
     %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：选择algorthm Mode
-    for i=1:L %信噪比的取值个数
+    for i=1:numSNR %信噪比的取值个数
       %  disp('Please wait......');
 %         loop=i
         for loop=1:Max_counter
@@ -45,15 +46,16 @@ for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
             %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
             % H_normalized=H_ideal./sum(abs(H_ideal));
             % gain_subc=abs(H_normalized);
-            [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,Noise_var(i),M,BER_target,Pt,algoMode,B);
-            % Bit_total=sum(bitnum_sub);                                        %BER_target仅用于Hughes_Hartogs算法
+            [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,...
+                Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
+            % Bit_total=sum(bitnum_sub);                                        
             %========================>>>Data Generation>>>>>===================
             %模块3：发送比特产生
-            Bit_sequence=randi(1,Rt);
+            Bit_sequence=randi(1,Rt);%需固定
             % Bit_sequence=randi(1,Bit_total);
             %-----------------Serial to Parallel Conversion------
             %模块4：串并转换
-            bit_sub=StoP_convert(Bit_sequence,bitnum_sub,M);
+            bit_sub=StoP_convert(Bit_sequence,bitnum_sub,MaxBitPerCarrier);
             %--------------Modulation(MQAM)---------------
             %模块5：调制部分，选择MQAM调制方式
             out_modulated=Modulation_mqam(bit_sub,power_sub,bitnum_sub);
@@ -83,7 +85,7 @@ for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
             out_ideal=Receive_estimation(out_FFT,H_ideal);
             %-----------Demodulation<<<<-->>>>-----------------
             %模块13：解调部分
-            out_demodulated=Demodulation_mqam(out_ideal,bitnum_sub,power_sub,M);
+            out_demodulated=Demodulation_mqam(out_ideal,bitnum_sub,power_sub,MaxBitPerCarrier);
             %--------------Parallel to Serial Conversion--------
             %模块14：并串转换
             Rx_sequence=PtoS_convert(out_demodulated,bitnum_sub,Rt);
@@ -112,5 +114,6 @@ for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
         save ser_Fischer.am      data -ascii;
     end
 end
-ser_bijiao();%几种绘图
+% ser_bijiao();%几种绘图
+ser_Fischer_compare();
 %-------------------end of file------------------------------
