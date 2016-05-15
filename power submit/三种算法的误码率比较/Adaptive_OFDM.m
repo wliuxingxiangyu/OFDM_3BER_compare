@@ -1,7 +1,7 @@
 %Introduce:仿真平台可以分为16个模块，其中模块1～模块15，各用一个函数实现其功能；
 %信道建立未考虑多普勒频移；信道估计为理想估计；采用子载波平均信噪比，子载波平均功率归一化为1。
 %系统发送比特总数固定，为Rt.
-clear all; clc; 
+clear all; clc;
 %% --------------------Parameters----------
 Num_subc=64;
 % Rb=10e6;  %(bit/s) 10Mbit/s
@@ -26,34 +26,53 @@ num_taps=4;  %多径数
 GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
-Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
-%% --------------Multipath_Rayleigh Channel Establish------
-%模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
-[path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps);
-[H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
-gain_subc=abs(H_ideal)
-% load  inf/inf3.mat
+Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计：平均BER
+%% -----改动参数--
+loadFileFlag=0;
+structStorePathStr='./structStore.mat';
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
-for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数    
+for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
     %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：选择algorthm Mode
     for i=1:numSNR %信噪比的取值个数
-      %  disp('Please wait......');
-%         loop=i
+        %  disp('Please wait......');
+        %         loop=i
         for loop=1:Max_counter
-          %% ------Source Allocation<<<<-->>>>-----------------
-            %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
-            % H_normalized=H_ideal./sum(abs(H_ideal));
-            % gain_subc=abs(H_normalized);
-            [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,...
-                Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
-            % Bit_total=sum(bitnum_sub);                                        
-            %========================>>>Data Generation>>>>>===================
-            %模块3：发送比特产生
-            Bit_sequence=randi(1,Rt);%需固定
-            % Bit_sequence=randi(1,Bit_total);
-            %-----------------Serial to Parallel Conversion------
+            %% *******发射系统*******
+            if loadFileFlag==0  %不是从文件加载
+                %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
+                [path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps);
+                [H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
+                gain_subc=abs(H_ideal);
+                %模块2:比特功率分配部分，
+                % H_normalized=H_ideal./sum(abs(H_ideal));
+                % gain_subc=abs(H_normalized);
+                [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,...
+                    Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
+                % Bit_total=sum(bitnum_sub);
+                %模块3：发送比特产生
+                Bit_sequence=randi(1,Rt);%需固定
+%                 %模块9：加性高斯噪声
+%                 out_AWGN=Gngauss(Noise_var(i),out_channel);%有randn噪声
+                %---------存入文件---
+                structTemp=[];
+                structTemp.H_ideal=H_ideal;
+                structTemp.channel_impulse=channel_impulse;
+                structTemp.bitnum_sub=bitnum_sub;
+                structTemp.power_sub=power_sub;
+                structTemp.Bit_sequence=Bit_sequence;
+               % structTemp.out_AWGN=out_AWGN;
+                save(structStorePathStr, '-struct', 'structTemp');
+            else   %是从文件加载
+                structTemp=load(structStorePathStr);
+                H_ideal=structTemp.H_ideal;
+                channel_impulse=structTemp.channel_impulse;
+                bitnum_sub=structTemp.bitnum_sub;
+                power_sub=structTemp.power_sub;
+                Bit_sequence=structTemp.Bit_sequence;
+                out_AWGN=structTemp.out_AWGN;
+            end;
             %模块4：串并转换
             bit_sub=StoP_convert(Bit_sequence,bitnum_sub,MaxBitPerCarrier);
             %--------------Modulation(MQAM)---------------
@@ -71,9 +90,13 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %---------------------AWGN Addition---------------
             %+++++++++++++++++++++compute noise_var+++++++++???????
             %--------------------------------------------------
-            %模块9：加入高斯白噪声
-            out_AWGN=Gngauss(Noise_var(i),out_channel);
-            %****************************Rx*********接收系统*********************
+             %模块9：加性高斯噪声
+             if loadFileFlag==0  %不是从文件加载
+             out_AWGN=Gngauss(Noise_var(i),out_channel);%有randn噪声
+              structTemp.out_AWGN=out_AWGN;
+              save(structStorePathStr, '-struct', 'structTemp');
+             end
+            %% *******接收系统*********************
             %------------------GI(Gurad Interval) Remove-------
             %模块10：保护间隔去除
             out_GIremove=out_AWGN(GI_length+1:length(out_AWGN));
@@ -92,28 +115,27 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %--------------------------- BER Calculation--------------
             %模块15：BER统计
             [BER_oneloop Num_error]=BER_calculation(Bit_sequence,Rx_sequence);
-            BER_stat(i)=BER_stat(i)+BER_oneloop;
-            Total_error(i)=Total_error(i)+Num_error;
+            BER_stat(i)=BER_stat(i)+BER_oneloop;%BER_oneloop:一次循环的BER
+            Total_error(i)=Total_error(i)+Num_error;%错误的比特数
         end
-        BER_stat(i)=BER_stat(i)/Max_counter;
-        Average_error(i)=Total_error(i)/Max_counter;
-    end
-    BER_stat
-    Average_error;
+        %Max_counter次循环已结束
+        BER_stat(i)=BER_stat(i)/Max_counter;%Average_error平均BER
+        Average_error(i)=Total_error(i)/Max_counter;%Average_error平均错误的比特数
+    end% 第i个SNR计算已结束
     %--------------------------Plot------------------
     %模块16：BER曲线绘图 %存入各自BER   am文件
     data=[];
     data = [SNR_av; BER_stat];%两个1*16拼接成2*16
     if algoMode == 1
         save ser_16QAM.am data -ascii;
-    elseif  algoMode == 2   
+    elseif  algoMode == 2
         save ser_chow.am   data -ascii;
-    elseif  algoMode == 3   
+    elseif  algoMode == 3
         save ser_Hughes.am       data -ascii;
-    elseif  algoMode == 4   
+    elseif  algoMode == 4
         save ser_Fischer.am      data -ascii;
     end
-end
+end %第algoMode种算法已结束
 % ser_bijiao();%几种绘图
 ser_Fischer_compare();
 %-------------------end of file------------------------------
