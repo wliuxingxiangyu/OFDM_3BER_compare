@@ -17,11 +17,11 @@ for i=1:num_sub
             dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;
             map_data=qam4(dec_data)*sqrt(power_sub(i));
             out_modulated(i)=map_data;
-        case 3
+        case 3  %分配3bit用qam8
             dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;
             map_data=qam8(dec_data)*sqrt(power_sub(i));
             out_modulated(i)=map_data;
-        case 4
+        case 4  %分配4bit用qam16
             dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;%二进制转十进制dec_data
             map_data=qam16(dec_data)*sqrt(power_sub(i));
             out_modulated(i)=map_data;

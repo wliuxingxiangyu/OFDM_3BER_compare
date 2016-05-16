@@ -10,7 +10,7 @@ structStoreNoisePathStr='./structStoreNoise.mat';
 Num_subc=64;
 % Rb=10e6;  %(bit/s) 10Mbit/s
 P_av=1;
-SNR_av=0:1:30;%子载波平均信噪比
+SNR_av=0:1:30;%子载波平均信噪比，S/N=0dB 即S=N此时误码率最大
 Noise_var=P_av./10.^(SNR_av./10); %子载波噪声功率
 Pt=P_av*Num_subc; %energy (wat????)
 Rb=10e6; % in Mbit/s
@@ -31,6 +31,7 @@ GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
 Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
+NoiseRandArr={};out_AWGN=[];
 %% --------从文件加载--Multipath_Rayleigh Channel Establish------
 if loadFileFlag==0  %不是从文件加载
     %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
@@ -53,23 +54,21 @@ else   %是从文件加载
     H_ideal=structTemp.H_ideal;
     channel_impulse=structTemp.channel_impulse;
     gain_subc=structTemp.gain_subc;
-    Bit_sequence=structTemp.Bit_sequence
+    Bit_sequence=structTemp.Bit_sequence;
+    NoiseRandArr=structTemp.NoiseRandArr;
 end;
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
 for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
-    %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：选择algorthm Mode
     for i=1:numSNR %信噪比的取值个数
-        %  disp('Please wait......');
-        %         loop=i
+%                 i
         for loop=1:Max_counter
-            %% ------Source Allocation<<<<-->>>>-----------------
-            %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
+          %% 模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
             % H_normalized=H_ideal./sum(abs(H_ideal));
             % gain_subc=abs(H_normalized);
             [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,...
-                Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
+                Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%Fischer算法未用到BER_target,Rt。
             % Bit_total=sum(bitnum_sub);
             %========================>>>Data Generation>>>>>===================
             %模块3：发送比特产生loadfile
@@ -92,22 +91,19 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %+++++++++++++++++++++compute noise_var+++++++++???????
             %--------------------------------------------------
             %模块9：加入高斯白噪声
-             if loadFileFlag==0  %不是从文件加载
-                Length=length(out_channel);
-                Noise_complex=sqrt(Noise_var(i)).*(randn(1,Length)+j.*randn(1,Length));
-                out_AWGN=out_channel+Noise_complex;
-                structNoise.Noise_complex=Noise_complex;
-                save(structStoreNoisePathStr, '-struct', 'structNoise');
-            else %是从文件加载
-                 Length=length(out_channel);
-                 structNoise=load(structStoreNoisePathStr); 
-                Noise_complex=structNoise.Noise_complex;
-                out_AWGN=out_channel+Noise_complex;          
-            end
+             if loadFileFlag==0  %不是从文件加载 %保存到文件，
+                Length=length(out_channel);%Noise_complex定义数组？
+                temp=randn(1,Length)+j.*randn(1,Length);
+                NoiseRandArr{1,i}=temp;
+                Noise_complex= sqrt( Noise_var(i) ).* temp;
+             else
+                 Noise_complex= sqrt( Noise_var(i) ).* NoiseRandArr{1,i};
+             end
+             out_AWGN=out_channel+Noise_complex;  
             %*****接收系统*********************
             %------------------GI(Gurad Interval) Remove-------
             %模块10：保护间隔去除
-            out_GIremove=out_AWGN(GI_length+1:length(out_AWGN));
+            out_GIremove=out_AWGN(GI_length+1:length(out_AWGN ));
             %-----------------------FFT--------------------
             %模块11：FFT将信号变换到频域
             out_FFT=1/sqrt(Num_subc).*fft(out_GIremove);
@@ -123,15 +119,16 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %--------------------------- BER Calculation--------------
             %模块15：BER统计
             [BER_oneloop Num_error]=BER_calculation(Bit_sequence,Rx_sequence);
-            BER_stat(i)=BER_stat(i)+BER_oneloop;
-            Total_error(i)=Total_error(i)+Num_error;
+            BER_stat(i)=BER_stat(i)+BER_oneloop;%加上 BER_oneloop，即对BER_stat(i)求和
+            Total_error(i)=Total_error(i)+Num_error;%加上 Num_error，即对Total_error(i)求和
         end
         BER_stat(i)=BER_stat(i)/Max_counter;
         Average_error(i)=Total_error(i)/Max_counter;
-    end
+    end%一个SNR(i)结束
     %--------------------------Plot------------------
     %模块16：BER曲线绘图 %存入各自BER   am文件
     data=[];
+    BER_stat
     data = [SNR_av; BER_stat];%两个1*16拼接成2*16
     if algoMode == 1
         save ser_16QAM.am data -ascii;
@@ -142,6 +139,11 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
     elseif  algoMode == 4
         save ser_Fischer.am      data -ascii;
     end
+end
+
+if loadFileFlag==0
+    structTemp.NoiseRandArr=NoiseRandArr;
+    save(structStorePathStr, '-struct', 'structTemp'); 
 end
 % ser_bijiao();%几种绘图
 ser_Fischer_compare();
