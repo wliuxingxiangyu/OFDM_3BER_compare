@@ -3,10 +3,10 @@
 %系统发送比特总数固定，为Rt.
 clear all; clc;
 %% -----改动参数--
-loadFileFlag=0;
+loadFileFlag=1;
 structStorePathStr='./structStore.mat';
 structStoreNoisePathStr='./structStoreNoise.mat';
-% -----固定参数--
+%% -----固定参数--
 Num_subc=64;
 % Rb=10e6;  %(bit/s) 10Mbit/s
 P_av=1;
@@ -31,14 +31,15 @@ GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
 Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
-%% --------------Multipath_Rayleigh Channel Establish------
+%% --------从文件加载--Multipath_Rayleigh Channel Establish------
 if loadFileFlag==0  %不是从文件加载
     %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
     [path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_paths);
     [H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
     gain_subc=abs(H_ideal);
     %模块3：发送比特产生
-    Bit_sequence=randi(1,Rt);%需固定
+    %     Bit_sequence=randi(1,Rt);%产生1111
+    Bit_sequence=randi([0,1],1,Rt) ;%产生0000111
     %---------存入文件---
     structTemp=[];
     structTemp.H_ideal=H_ideal;
@@ -47,11 +48,12 @@ if loadFileFlag==0  %不是从文件加载
     structTemp.Bit_sequence=Bit_sequence;
     save(structStorePathStr, '-struct', 'structTemp');
 else   %是从文件加载
+    structTemp=[];
     structTemp=load(structStorePathStr);
     H_ideal=structTemp.H_ideal;
     channel_impulse=structTemp.channel_impulse;
     gain_subc=structTemp.gain_subc;
-    Bit_sequence=structTemp.Bit_sequence;
+    Bit_sequence=structTemp.Bit_sequence
 end;
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
@@ -70,9 +72,7 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
                 Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
             % Bit_total=sum(bitnum_sub);
             %========================>>>Data Generation>>>>>===================
-            %模块3：发送比特产生
-            Bit_sequence=randi(1,Rt);%需固定
-            % Bit_sequence=randi(1,Bit_total);
+            %模块3：发送比特产生loadfile
             %-----------------Serial to Parallel Conversion------
             %模块4：串并转换
             bit_sub=StoP_convert(Bit_sequence,bitnum_sub,MaxBitPerCarrier);
@@ -101,7 +101,7 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             else %是从文件加载
                  Length=length(out_channel);
                  structNoise=load(structStoreNoisePathStr); 
-                Noise_complex=structNoise.structNoise;
+                Noise_complex=structNoise.Noise_complex;
                 out_AWGN=out_channel+Noise_complex;          
             end
             %*****接收系统*********************
@@ -118,7 +118,7 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %模块13：解调部分
             out_demodulated=Demodulation_mqam(out_ideal,bitnum_sub,power_sub,MaxBitPerCarrier);
             %--------------Parallel to Serial Conversion--------
-            %模块14：并串转换
+            %模块14：并串转换1111
             Rx_sequence=PtoS_convert(out_demodulated,bitnum_sub,Rt);
             %--------------------------- BER Calculation--------------
             %模块15：BER统计
