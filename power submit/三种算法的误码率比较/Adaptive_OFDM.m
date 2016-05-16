@@ -1,8 +1,12 @@
 %Introduce:仿真平台可以分为16个模块，其中模块1～模块15，各用一个函数实现其功能；
 %信道建立未考虑多普勒频移；信道估计为理想估计；采用子载波平均信噪比，子载波平均功率归一化为1。
 %系统发送比特总数固定，为Rt.
-clear all; clc; 
-%% --------------------Parameters----------
+clear all; clc;
+%% -----改动参数--
+loadFileFlag=0;
+structStorePathStr='./structStore.mat';
+structStoreNoisePathStr='./structStoreNoise.mat';
+% -----固定参数--
 Num_subc=64;
 % Rb=10e6;  %(bit/s) 10Mbit/s
 P_av=1;
@@ -22,32 +26,49 @@ gap=-log(5*BER_target)/1.5;  %dB
 numSNR=length(SNR_av); %信噪比的取值个数
 rms_delay=2;  %rms时延扩展
 max_delay=16; %最大时延扩展
-num_taps=4;  %多径数
+num_paths=4;  %多径数
 GI_length=8; %length of GI
 BER_stat=zeros(1,length(SNR_av)); %统计BER
 Total_error=zeros(1,length(SNR_av)); %总错误比特数
 Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计BER
 %% --------------Multipath_Rayleigh Channel Establish------
-%模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
-[path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps);
-[H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
-gain_subc=abs(H_ideal);
+if loadFileFlag==0  %不是从文件加载
+    %模块1：多径瑞利衰落信道建立，返回信道频率响应和冲激响应
+    [path_delay path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_paths);
+    [H_ideal channel_impulse]=Channel_estimation(path_delay,path_amp_average,Num_subc);
+    gain_subc=abs(H_ideal);
+    %模块3：发送比特产生
+    Bit_sequence=randi(1,Rt);%需固定
+    %---------存入文件---
+    structTemp=[];
+    structTemp.H_ideal=H_ideal;
+    structTemp.channel_impulse=channel_impulse;
+    structTemp.gain_subc=gain_subc;
+    structTemp.Bit_sequence=Bit_sequence;
+    save(structStorePathStr, '-struct', 'structTemp');
+else   %是从文件加载
+    structTemp=load(structStorePathStr);
+    H_ideal=structTemp.H_ideal;
+    channel_impulse=structTemp.channel_impulse;
+    gain_subc=structTemp.gain_subc;
+    Bit_sequence=structTemp.Bit_sequence;
+end;
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
-for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数    
+for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
     %-----------Select parameter for Resource Allocation Algo----------------
     %模块0：选择algorthm Mode
     for i=1:numSNR %信噪比的取值个数
-      %  disp('Please wait......');
-%         loop=i
+        %  disp('Please wait......');
+        %         loop=i
         for loop=1:Max_counter
-          %% ------Source Allocation<<<<-->>>>-----------------
+            %% ------Source Allocation<<<<-->>>>-----------------
             %模块2:比特功率分配部分，通过模块0选择要执行的自适应分配算法
             % H_normalized=H_ideal./sum(abs(H_ideal));
             % gain_subc=abs(H_normalized);
             [bitnum_sub power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,...
                 Noise_var(i),MaxBitPerCarrier,BER_target,Pt,algoMode,B);%BER_target仅用于Hughes_Hartogs算法
-            % Bit_total=sum(bitnum_sub);                                        
+            % Bit_total=sum(bitnum_sub);
             %========================>>>Data Generation>>>>>===================
             %模块3：发送比特产生
             Bit_sequence=randi(1,Rt);%需固定
@@ -71,8 +92,19 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %+++++++++++++++++++++compute noise_var+++++++++???????
             %--------------------------------------------------
             %模块9：加入高斯白噪声
-            out_AWGN=Gngauss(Noise_var(i),out_channel);
-            %****************************Rx*********接收系统*********************
+             if loadFileFlag==0  %不是从文件加载
+                Length=length(out_channel);
+                Noise_complex=sqrt(Noise_var(i)).*(randn(1,Length)+j.*randn(1,Length));
+                out_AWGN=out_channel+Noise_complex;
+                structNoise.Noise_complex=Noise_complex;
+                save(structStoreNoisePathStr, '-struct', 'structNoise');
+            else %是从文件加载
+                 Length=length(out_channel);
+                 structNoise=load(structStoreNoisePathStr); 
+                Noise_complex=structNoise.structNoise;
+                out_AWGN=out_channel+Noise_complex;          
+            end
+            %*****接收系统*********************
             %------------------GI(Gurad Interval) Remove-------
             %模块10：保护间隔去除
             out_GIremove=out_AWGN(GI_length+1:length(out_AWGN));
@@ -103,11 +135,11 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
     data = [SNR_av; BER_stat];%两个1*16拼接成2*16
     if algoMode == 1
         save ser_16QAM.am data -ascii;
-    elseif  algoMode == 2   
+    elseif  algoMode == 2
         save ser_chow.am   data -ascii;
-    elseif  algoMode == 3   
+    elseif  algoMode == 3
         save ser_Hughes.am       data -ascii;
-    elseif  algoMode == 4   
+    elseif  algoMode == 4
         save ser_Fischer.am      data -ascii;
     end
 end
