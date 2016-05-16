@@ -30,6 +30,7 @@ Max_counter=1;  %在一个信噪比取值下，进行Max_counter次发送和接收，来统计：平均BE
 %% -----改动参数--
 loadFileFlag=0;
 structStorePathStr='./structStore.mat';
+structStoreNoisePathStr='./structStoreNoise.mat';
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
 for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
@@ -53,8 +54,8 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
                 % Bit_total=sum(bitnum_sub);
                 %模块3：发送比特产生
                 Bit_sequence=randi(1,Rt);%需固定
-%                 %模块9：加性高斯噪声
-%                 out_AWGN=Gngauss(Noise_var(i),out_channel);%有randn噪声
+                %                 %模块9：加性高斯噪声
+                %                 out_AWGN=Gngauss(Noise_var(i),out_channel);%有randn噪声
                 %---------存入文件---
                 structTemp=[];
                 structTemp.H_ideal=H_ideal;
@@ -62,7 +63,6 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
                 structTemp.bitnum_sub=bitnum_sub;
                 structTemp.power_sub=power_sub;
                 structTemp.Bit_sequence=Bit_sequence;
-               % structTemp.out_AWGN=out_AWGN;
                 save(structStorePathStr, '-struct', 'structTemp');
             else   %是从文件加载
                 structTemp=load(structStorePathStr);
@@ -71,7 +71,6 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
                 bitnum_sub=structTemp.bitnum_sub;
                 power_sub=structTemp.power_sub;
                 Bit_sequence=structTemp.Bit_sequence;
-                out_AWGN=structTemp.out_AWGN;
             end;
             %模块4：串并转换
             bit_sub=StoP_convert(Bit_sequence,bitnum_sub,MaxBitPerCarrier);
@@ -90,12 +89,19 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
             %---------------------AWGN Addition---------------
             %+++++++++++++++++++++compute noise_var+++++++++???????
             %--------------------------------------------------
-             %模块9：加性高斯噪声
-             if loadFileFlag==0  %不是从文件加载
-             out_AWGN=Gngauss(Noise_var(i),out_channel);%有randn噪声
-              structTemp.out_AWGN=out_AWGN;
-              save(structStorePathStr, '-struct', 'structTemp');
-             end
+            %模块9：加性高斯噪声
+            if loadFileFlag==0  %不是从文件加载
+                Length=length(out_channel);
+                Noise_complex=sqrt(Noise_var).*(randn(1,Length)+j.*randn(1,Length));
+                out_AWGN=out_channel+Noise_complex;
+                structNoise.Noise_complex=Noise_complex;
+                save(structStoreNoisePathStr, '-struct', 'structNoise');
+            else %是从文件加载
+                 Length=length(out_channel);
+                 structNoise=load(structStoreNoisePathStr); 
+                Noise_complex=structNoise.structNoise;
+                out_AWGN=out_channel+Noise_complex;          
+            end
             %% *******接收系统*********************
             %------------------GI(Gurad Interval) Remove-------
             %模块10：保护间隔去除
