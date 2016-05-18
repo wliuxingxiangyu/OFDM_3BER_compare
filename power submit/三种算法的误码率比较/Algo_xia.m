@@ -1,4 +1,4 @@
-%---------------------改进的算法 Rb最大化----------------
+%% ---------------------改进的算法 Rb最大化----------------
 function [bit_alloc power_alloc]=Algo_xia(Num_subc,Pt,K,gain_subc,gap,noise_var,Rt)
 snr_subc=SNR_subc(gap,gain_subc,noise_var);
 step=1;
@@ -16,11 +16,11 @@ end
 %-------------Bit allocation init and round-----------------------------
 bit_theory=log2(1+init_power_alloc.*snr_subc);
 bit_round=round(bit_theory);
-%-------------Power round----------------------------
-function power_round=Power(bit,snr_subc)
-power_round=(2.^bit-1)./snr_subc;
-end
-power_round=Power(bit_round,snr_subc);
+%% -------------Power round----------------------------
+    function power_round=PowerRoundFun(bit,snr_subc)
+        power_round=(2.^bit-1)./snr_subc;
+    end
+power_round=PowerRoundFun(bit_round,snr_subc);
 %-------------Power diff------------------
 power_diff=init_power_alloc-power_round;
 power_total=sum(power_round);
@@ -29,8 +29,8 @@ while(power_total<Pt)
     index_use=find(bit_round>=0);
     id_max=find(power_diff(index_use)==max(power_diff(index_use)),1);
     index_max=index_use(id_max);
-    power_add=Power(bit_round(index_max)+step,snr_subc(index_max))-...
-        Power(bit_round(index_max),snr_subc(index_max));
+    power_add=PowerRoundFun(bit_round(index_max)+step,snr_subc(index_max))-...
+        PowerRoundFun(bit_round(index_max),snr_subc(index_max));
     if(power_total+power_add<=Pt)
         bit_round(index_max)=bit_round(index_max)+step;
         power_round(index_max)=power_round(index_max)+power_add;
@@ -46,8 +46,8 @@ while(power_total>Pt)
     %-----------------------------------------------
     id_min=find(power_diff(index_use)==min(power_diff(index_use)),1);
     index_min=index_use(id_min);
-    power_reduce=Power(bit_round(index_min),snr_subc(index_min))-...
-        Power(bit_round(index_min)-step,snr_subc(index_min));
+    power_reduce=PowerRoundFun(bit_round(index_min),snr_subc(index_min))-...
+        PowerRoundFun(bit_round(index_min)-step,snr_subc(index_min));
     if(power_total-power_reduce>=Pt)
         bit_round(index_min)=bit_round(index_min)-step;
         power_round(index_min)=power_round(index_min)-power_reduce;
@@ -73,13 +73,13 @@ bit_diff=bit_temp-bit_round_2;
 bit_total=sum(bit_round_2);
 %---------------
 for i=1:Num_subc
-     if(bit_round_2(i)>K)
+    if(bit_round_2(i)>K)
         bit_round_2(i)=K;
     end
 end
 while(bit_total>Rt)
     index_use=find(bit_round_2>0);
-    diff_use=bit_diff(index_use);  
+    diff_use=bit_diff(index_use);
     id=find(diff_use==min(diff_use),1); %好好理解索引（序号）的对应关系
     ind_alter=index_use(id);  %好好理解索引（序号）的对应关系
     bit_round_2(ind_alter)=bit_round_2(ind_alter)-1;
@@ -92,7 +92,7 @@ while(bit_total<Rt)
     id=find(diff_use==max(diff_use),1);
     ind_alter=index_use(id);
     if(bit_round_2(ind_alter)<K)
-    bit_round_2(ind_alter)=bit_round_2(ind_alter)+1;
+        bit_round_2(ind_alter)=bit_round_2(ind_alter)+1;
     else
         bit_diff(ind_alter)=-inf;
     end
@@ -102,30 +102,3 @@ end
 bit_alloc=bit_round_2;
 power_alloc=power_round;
 end
-
-
-
-
-
-
-    
-    
-    
-        
-        
-        
-        
-        
-    
-    
-    
- 
-
-
-
-
-
-
-
-
-

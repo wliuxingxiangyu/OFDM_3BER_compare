@@ -58,7 +58,7 @@ else   %是从文件加载
 end;
 %% --------------------------------------------------------------------
 % for algoMode=1:5  %k：选择算法的次数/程序运行次数/信道建立次数
-for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
+for algoMode=5 %k：选择算法的次数/程序运行次数/信道建立次数
     %模块0：选择algorthm Mode
     for i=1:numSNR %信噪比的取值个数
 %                 i
@@ -127,7 +127,6 @@ for algoMode=4  %k：选择算法的次数/程序运行次数/信道建立次数
     %--------------------------Plot------------------
     %模块16：BER曲线绘图 %存入各自BER   am文件
     data=[];
-    BER_stat
     data = [SNR_av; BER_stat];%两个1*16拼接成2*16
     if algoMode == 1
         save BER_16QAM.am data -ascii;

@@ -1,9 +1,9 @@
 %------------Multipath_Rayleigh channel--------------
 function [path_delay,path_amp_average]=Multipath_Channel_Init(rms_delay,max_delay,num_taps)
 %-------------------Input---------------------------
-% rms_delay: RMS path delay
-% max_delay: Maximum path delay
-% num_taps: Number of taps per multipath channel
+% rms_delay: RMS path delay时延扩展
+% max_delay: Maximum path delay最大时延扩展
+% num_taps: Number of taps per multipath channel 多径数
 %--------------------------Output--------------------------------------
 % path_delay: The delay values of different paths
 % path_amp_average: The amplitude values of different paths 

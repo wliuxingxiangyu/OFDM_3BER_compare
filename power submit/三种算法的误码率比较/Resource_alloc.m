@@ -1,9 +1,5 @@
 %------Source Allocation<<<<-=->>>>Serial to Parallel Conversion------
 function [bitnum_sub,power_sub]=Resource_alloc(Num_subc,gain_subc,Rt,gap,Noise_var,M,BER_target,Pt,xia,B)
-%-----------------------input variables----------------------
-
-%------------------------initialization----------------------
-%------------------------------------------------------
 flag=1;
 while flag
     switch xia
