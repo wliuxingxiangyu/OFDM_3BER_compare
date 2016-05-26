@@ -26,8 +26,8 @@ for i=1:num_sub
             map_data=qam16(dec_data)*sqrt(power_sub(i));
             out_modulated(i)=map_data;
         case 5
-            dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;
-            map_data=qam32(dec_data)*sqrt(power_sub(i));
+            dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;% 01001制转十进制9，再加+1=10.
+            map_data=qam32(dec_data)*sqrt(power_sub(i));%10映射成qam32的第10个星座点--复数值。
             out_modulated(i)=map_data;
         case 6
             dec_data=bi2de(bit_sub(i,1:bitnum_sub(i)),'left-msb')+1;
