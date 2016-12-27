@@ -25,7 +25,7 @@ grid on;
 legend('800km/h  OFDM','800km/h  RAADA','400km/h  OFDM','400km/h  RAADA',0);
 xlabel('SNR(dB)');
 ylabel('BER');
-axis([0 30  0.000009   1 ]);
+axis([0 30  0.000001   1 ]);
 
 %800km/h的改善百分比
 ysOFDM_ysRAADA_800=ys8O-ys8R;
