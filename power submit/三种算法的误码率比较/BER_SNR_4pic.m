@@ -12,10 +12,10 @@ ys4O=a(:,8);
 %第9列空出
 xs4R=a(:,10);%800  RAADA，
 ys4R=a(:,11);
-semilogy(xs8O,ys8O,'k:*');%800 OFDM，实线%semilogy对第二个参数ys75取log.
-hold on;
-semilogy(xs8R,ys8R,'k:o');%800 RAADA，空心圆(中间的冒号一般都要，表示用虚线相连)
-hold on;
+% semilogy(xs8O,ys8O,'k:*');%800 OFDM，实线%semilogy对第二个参数ys75取log.
+% hold on;
+% semilogy(xs8R,ys8R,'k:o');%800 RAADA，空心圆(中间的冒号一般都要，表示用虚线相连)
+% hold on;
 semilogy(xs4O,ys4O,'k:v');%400  OFDM，下三角形
 hold on;
 semilogy(xs4R,ys4R,'k:.');%800  RAADA，点划线
