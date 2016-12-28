@@ -29,13 +29,22 @@ axis([0 30  0.000002   1 ]);
 
 %800km/h的改善百分比
 ysOFDM_ysRAADA_800=ys8O-ys8R;
-ysOFDM_ysRAADA_percent_800=(ysOFDM_ysRAADA_800/ys8O)*100;
-ysOFDM_ysRAADA_percent_800min=min(ysOFDM_ysRAADA_percent_800)%  0.2292%
-ysOFDM_ysRAADA_percent_800max=max(ysOFDM_ysRAADA_percent_800)% 33.3333% 
+ysOFDM_ysRAADA_percent_800=(ysOFDM_ysRAADA_800./ys8O)*100
+[ysOFDM_ysRAADA_percent_800min min800Index] =min(ysOFDM_ysRAADA_percent_800);%  16.6667%
+ysOFDM_ysRAADA_percent_800min
+min800Index
+[ysOFDM_ysRAADA_percent_800max max800Index] =max(ysOFDM_ysRAADA_percent_800);%  33.3333%
+ysOFDM_ysRAADA_percent_800max
+max800Index
+
 
 %400km/h的改善百分比
 ysOFDM_ysRAADA_400=ys4O-ys4R;
-ysOFDM_ysRAADA_percent_400=(ysOFDM_ysRAADA_400/ys4O)*100;
-ysOFDM_ysRAADA_percent_400min=min(ysOFDM_ysRAADA_percent_400)%  16.6667%
-ysOFDM_ysRAADA_percent_400max=max(ysOFDM_ysRAADA_percent_400)%  33.3333%
-
+ysOFDM_ysRAADA_percent_400=(ysOFDM_ysRAADA_400./ys4O)*100
+% ysOFDM_ysRAADA_percent_400min=min(ysOFDM_ysRAADA_percent_400);%  16.6667%
+[ysOFDM_ysRAADA_percent_400min min400Index] =min(ysOFDM_ysRAADA_percent_400);%  16.6667%
+ysOFDM_ysRAADA_percent_400min
+min400Index
+[ysOFDM_ysRAADA_percent_400max max400Index] =max(ysOFDM_ysRAADA_percent_400);%  33.3333%
+ysOFDM_ysRAADA_percent_400max
+max400Index
