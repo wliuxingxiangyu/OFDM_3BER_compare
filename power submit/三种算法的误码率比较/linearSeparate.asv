@@ -1,0 +1,16 @@
+clc;clear;close all;
+x0=0;y0=0;
+r1=1;r2=2;
+alpha=[0:10:360];
+x1=x0+r1*cos(alpha);
+y1=y0+r1*sin(alpha);
+
+x2=x0+r2*cos(alpha);
+y2=y0+r2*sin(alpha);
+
+% plot(1,1,'k:.');
+size=size(x);
+plot(x1,y1,'k:.');
+hold on
+plot(x2,y2,'r:.');
+% axis square;
